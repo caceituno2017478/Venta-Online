@@ -1,7 +1,8 @@
 const Productos = require('../models/productos.model')
+const Categoria = require('../models/categoria.model')
 
 function agregarProducto(req,res) {
-    console.log(req.user.rol)
+
     if(req.user.rol === "administrador"){
         var parametros = req.body;
         var modeloProducto = Productos();
@@ -17,11 +18,19 @@ function agregarProducto(req,res) {
                 modeloProducto.stock = parametros.stock;
                 modeloProducto.precio = parametros.precio;
                 modeloProducto.vendido = 0;
-                modeloProducto.save((err, productoGuardado) => {
-                    if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                    if(!productoGuardado) return res.status(404)
-                    .send({ mensaje: "Error al momento de guardar el producto"})
-                    return res.status(200).send({ producto: productoGuardado})
+                Categoria.findOne({nombre: parametros.categoria}, (err, categoriaEncontrada)=>{
+                    if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                    if(categoriaEncontrada !== null ) {
+                        modeloProducto.nombreCategoria =  parametros.categoria;
+                        modeloProducto.save((err, productoGuardado) => {
+                            if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                            if(!productoGuardado) return res.status(404)
+                            .send({ mensaje: "Error al momento de guardar el producto"})
+                            return res.status(200).send({ producto: productoGuardado})
+                        })
+                    }else{
+                        return res.status(404).send({mensaje: "Debe crear primero la categoria"})
+                    }
                 })
         }else{
             
@@ -72,6 +81,8 @@ function editarProducto(req,res) {
     }
 }
 
+/* tomar en cuenta que se debe de eliminar tambien en el carrito de compras*/
+
 function eliminarProducto(req,res){
     if(req.user.rol === "administrador") {
         var idProd = req.params.idProducto;
@@ -91,9 +102,7 @@ function eliminarProducto(req,res){
     }else{
         return res.status(404)
     .send({mensaje: "No posees los permisos necesarios"})
-    }
-    
-    
+    } 
 }
 
 module.exports = {

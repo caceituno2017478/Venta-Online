@@ -7,10 +7,7 @@ var ProductosSchema = Schema({
     decripcion: String,
     stock:Number,
     precio: Number,
-    categorias: [{
-        nombreCategoria:String,
-        idCategoria:{type: Schema.Types.ObjectId, ref: "categorias"}
-    }],
+    nombreCategoria: String,
     vendido: Number
 })
 

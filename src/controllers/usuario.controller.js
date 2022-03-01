@@ -1,4 +1,5 @@
 const Usuarios = require("../models/usuario.model")
+const Carrito = require("../models/carrito.model")
 const bcrypt = require("bcrypt-nodejs");
 const jwt = require("../services/jwt")
 
@@ -30,6 +31,8 @@ function login(req, res) {
 
 }
 
+/****************************************** agregar usuario *************************************************************/ 
+
 function agregarUsuario(req,res){
     var parametros = req.body;
     var modeloUsuarios = Usuarios();
@@ -50,6 +53,8 @@ function agregarUsuario(req,res){
                 if(err) return res.status(500).send({ mensaje:"Error en la peticion"})
                 if(!usuarioGuardado) return res.status(404).send({ mensaje:"Error al agregar el usuario"})
 
+                agregarCarrito(usuarioGuardado)
+
                 return res.status(200).send({ usuario: usuarioGuardado })
             });
         })
@@ -61,6 +66,23 @@ function agregarUsuario(req,res){
    
 }
 
+function agregarCarrito(usuarioGuardado) {
+    
+    var modeloCarrito = Carrito();
+
+    if(usuarioGuardado.rol === "cliente"){
+        modeloCarrito.idUsuario = usuarioGuardado._id;
+        modeloCarrito.save((err, carritoGuardado)=>{
+            if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!carritoGuardado) return res.status(404).send({ mensaje: "Error al crear un carrito"})
+            
+            console.log("carrito guardado"+carritoGuardado)
+        })
+    }else{
+        return res.status(404).send({mesaje: "No posees los permisos necesarios"})
+    }
+}
+
 function verificacionesUsuariosGmail(parametros){
     Usuarios.find({gmail: parametros.gmail},(err, usuarioEncontrado) =>{
         if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
@@ -69,6 +91,9 @@ function verificacionesUsuariosGmail(parametros){
         return true;
     })
 }
+
+
+/****************************************** editar usuario *************************************************************/ 
 
 function editarUsuarios(req,res) {
     var parametros = req.body;
@@ -95,44 +120,51 @@ function editarUsuarios(req,res) {
     })
 }
 
-// hacer una revision -- si se debe agregar un default o nel
-// function eliminarUsuarios(req, res) {
-//     var idUser = req.params.idUsuario;
-//     registrar();
-//     Usuarios.findById(idUser,(err,usuariosEncontrado) => {
-//         if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-//         if (!usuariosEncontrado) return res.status(500).send({ mensaje: "El usuario ingresado no existe"})
-//         if(usuariosEncontrado.rol === "cliente"){
-//            Usuarios.findByIdAndDelete(idUser,(err,usuariosEliminados) => {
-//             if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-//             if (!usuariosEliminados) return res.status(500).send({ mensaje: "Error al eliminar un usuario"})
-//             return res.status(200).send({mensaje: ""})
-//            })
-//         }else{
-//             return res.status(500).send({ mensaje: "Este de usuario no se pueden editar"})
-//         }
-        
-//     })
-// }
+/****************************************** eliminar usuario *************************************************************/ 
 
-// registrar
-function registrar(){
-    Usuarios.findOne({ gmail: "default@gmail.com" }, (err, usuariosDefault) => {
-        if(err) return res.status(500).send({ mensaje:"Error en la peticion existe default"})
-        if(usuariosDefault === null){
-            var usuariosModel = new Usuarios();
-            usuariosModel.nombre = "default";
-            usuariosModel.apellido = "default"
-            usuariosModel.gmail = "default@gmail.com";
-            usuariosModel.rol = "cliente"
-            bcrypt.hash("123456", null, null ,(err, passwordEncrypt)=>{
-                usuariosModel.password = passwordEncrypt;
-                usuariosModel.save((err,usuarioGuardado)=>{
-                
-                })
+// hacer una revision -- si se debe agregar un default o nel
+function eliminarUsuarios(req, res) {
+    var idUser = req.user.sub;
+
+    if(req.user.sub === "cliente"){
+
+        Usuarios.findById(idUser,(err,usuariosEncontrado) => {
+            if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if (!usuariosEncontrado) return res.status(500).send({ mensaje: "El usuario ingresado no existe"})
+            if(usuariosEncontrado.rol === "cliente"){
+               Usuarios.findByIdAndDelete(idUser,(err,usuariosEliminados) => {
+                if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                if (!usuariosEliminados) return res.status(500).send({ mensaje: "Error al eliminar un usuario"})
+                eliminarCarrito(usuariosEliminados);
+                return res.status(200).send({usuario: usuariosEliminados})
+               })
+            }else{
+                return res.status(500).send({ mensaje: "Este de usuario no se pueden editar"})
+            }
+            
+        })
+        
+    }else{
+        return res.status(404).send({ mensaje: "No posees lo permisos necesarios"})
+    }
+}
+
+function eliminarCarrito(usuariosEliminados){
+    if(usuariosEliminados.rol === "cliente"){
+        Carrito.findOne({idUsuario: usuariosEliminados._id},(err,carritoEncontrado)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!carritoEncontrado) return res.status(500).send({ mensaje: "Error al encontrar el carrito"})
+
+            Carrito.findByIdAndDelete(carritoEncontrado._id,(err, carritoBorrado)=>{
+                if(err) return res.status(err).send({ mensaje: "Error en la peticion"})
+                if(!carritoBorrado) return res.status(404).send({ mesaje: "Error al eliminar el carrito"})
+                //return res.status(200).send({ carrito: carritoBorrado})
+                console.log("carrito "+carritoBorrado)
             })
-        }
-    })
+        })
+    }else{
+        return res.status(404).send({mesaje: "No posees los permisos necesarios"}) 
+    }
 }
 
 
@@ -140,5 +172,6 @@ function registrar(){
 module.exports = {
     login,
     agregarUsuario,
-    editarUsuarios
+    editarUsuarios,
+    eliminarUsuarios
 }
