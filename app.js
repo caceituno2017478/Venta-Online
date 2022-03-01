@@ -3,10 +3,12 @@ const cors = require('cors');
 var app = express();
 
 // aqui se importan las rutas
-// ejemplo
-//const ejemploRutas = require('./src/routers/ejemplo.routes');
 
-/* indicar las rutas*/
+const carritoRutas=require('./src/routes/carrito.routes');
+const categoriaRutas = require('./src/routes/categoria.routes');
+const facturaRutas= require('./src/routes/factura.routes')
+const productoRutas = require('./src/routes/productos.routes');
+const usuarioRutas = require('./src/routes/usuarios.routes')
 
 //middleware
 app.use(express.urlencoded({extended: false}));
@@ -19,6 +21,6 @@ app.use(cors());
 // colocar una, y la ruta
 
 /* colocar la ruta llamandola por la variable*/
-app.use('/api');
+app.use('/api',carritoRutas,categoriaRutas,facturaRutas,productoRutas,usuarioRutas);
 
 module.exports = app;
