@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const app = require('./app');
 const Usuario = require("./src/models/usuario.model")
+const Categorias = require("./src/models/categoria.model")
 const bcrypt = require("bcrypt-nodejs");
 
 mongoose.Promise = global.Promise;
@@ -10,6 +11,7 @@ mongoose.connect("mongodb://localhost:27017/ventaonline-carlosaceituno",{useNewU
     app.listen(3030,(req,res)=>{
         console.log("El servidor corre correctamente.")
         administrador()
+        registrar()
     })
 }).catch(err=>console.error(err));
 
@@ -46,3 +48,17 @@ function administrador(req, res) {
     })
 }
 
+function registrar(){
+    Categorias.findOne({ nombre: "default" }, (err, busquedaDefault) => {
+        if(err) return res.status(500).send({ mensaje:"Error en la peticion existe default"})
+        if(busquedaDefault === null){
+            var categoriaModel = new Categorias();
+            categoriaModel.nombre = "default";
+            categoriaModel.descripcion = "Default"
+            categoriaModel.save((err, categoriaDefault) => {
+            })
+        }else{
+            console.log("categoria existente")
+        }
+    })
+}

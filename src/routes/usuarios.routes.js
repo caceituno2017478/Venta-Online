@@ -8,5 +8,6 @@ const api = express.Router();
 api.post("/login",usuariosController.login)
 api.post("/agregarUsuarios",usuariosController.agregarUsuario)
 api.put("/editarUsuarios",md_autenticacion.autenticacion,usuariosController.editarUsuarios)
+api.delete("/eliminarUsuarios",md_autenticacion.autenticacion,usuariosController.eliminarUsuarios)
 
 module.exports =api;

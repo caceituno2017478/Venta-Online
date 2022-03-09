@@ -72,6 +72,7 @@ function agregarCarrito(usuarioGuardado) {
 
     if(usuarioGuardado.rol === "cliente"){
         modeloCarrito.idUsuario = usuarioGuardado._id;
+        modeloCarrito.total = 0; 
         modeloCarrito.save((err, carritoGuardado)=>{
             if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
             if(!carritoGuardado) return res.status(404).send({ mensaje: "Error al crear un carrito"})
@@ -102,6 +103,7 @@ function editarUsuarios(req,res) {
     Usuarios.findById(idUser,(err,usuariosEncontrado) => {
         if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
         if (!usuariosEncontrado) return res.status(500).send({ mensaje: "El usuario ingresado no existe"})
+        console.log(usuariosEncontrado.rol)
         if(usuariosEncontrado.rol === "cliente"){
             if(parametros.password || parametros.gmail){
                 return res.status(404).send({ mensaje: "Este tipo de datos no se pueden modificar"})
@@ -125,8 +127,7 @@ function editarUsuarios(req,res) {
 // hacer una revision -- si se debe agregar un default o nel
 function eliminarUsuarios(req, res) {
     var idUser = req.user.sub;
-
-    if(req.user.sub === "cliente"){
+    if(req.user.rol === "cliente"){
 
         Usuarios.findById(idUser,(err,usuariosEncontrado) => {
             if (err) return res.status(500).send({ mensaje: "Error en la peticion"})

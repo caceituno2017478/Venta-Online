@@ -14,4 +14,4 @@ var FacturaSchema = Schema({
     totalFactura: Number
 })
 
-module.exports = mongoose.model("faturas",FacturaSchema)
+module.exports = mongoose.model("facturas",FacturaSchema)
