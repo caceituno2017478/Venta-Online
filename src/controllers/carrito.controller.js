@@ -2,119 +2,105 @@ const Carrito = require("../models/carrito.model")
 const Productos = require("../models/productos.model")
 const Factura = require("../models/factura.model")
 
-// revisar la suma del total en el carrito 
 function agregarProductosCarrito(req, res){
     var parametros = req.body;
     if(req.user.rol === "cliente"){
-
+        // verifica la ecistencia del carrito
         Carrito.findOne({idUsuario: req.user.sub},(err,carritoEncontrado)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
             if(!carritoEncontrado) return res.status(404).send({ mensaje: "El carrito no existe"})
-
+            // verifica la existencia del carrito
             Productos.findOne({nombre: parametros.nombreProducto},(err,productoEncontrado)=>{
-                console.log(productoEncontrado)
                 if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
                 if(productoEncontrado === null) return res.status(500).send({mensaje: "Ese producto no existe"})
                 
-                let total= 0;
-                let cantidadTotal=0;
-                let cantidad=0;
+                let subtotal= 0, subtotalGeneral=0 , cantidadTotal=0 ,totalCarrito =0 ,cantidadVerificacion = 0,
+                verificacionStock =0;
                 let varibleIngreso = false;
-                let totalCarrito =0;
 
-                Carrito.findOne({_id: carritoEncontrado._id,listadoProducto: {$elemMatch: {idProducto: productoEncontrado._id, 
-                    nombre: parametros.nombreProducto}}},(err,productoVerificado)=>{
-                    if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                    if(productoVerificado === null) return res.status(500).send({mensaje: "Error al momento de verificar el producto"})
-                    console.log(productoVerificado.listaProductos)
-                        console.log("llegada al for")
-                    for(var e = 0; e < productoVerificado.listaProductos.length ;e++){
-                        console.log("ingreso al for")
-                        console.log(e)
-                        console.log(productoVerificado.listaProductos[e].nombreProducto === parametros.nombreProducto)
-                        if(productoVerificado.listaProductos[e].nombreProducto === parametros.nombreProducto){
-                            varibleIngreso = true;
-                            console.log("ingreso segundo if")
-                            Carrito.findOne({_id: carritoEncontrado._id,listaProductos:{$elemMatch:{idProducto: productoEncontrado._id, 
-                                nombreProducto: parametros.nombreProducto}}},(err, productoCarrito) => {
-                                    if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                                    if (!productoCarrito) return res.status(500).send({mensaje: "Error al momento de encontrar el producto"})
-                                    for (var i=0 ;i< productoCarrito.listaProductos.length ; i++){
-                                        if(productoCarrito.listaProductos[i].nombreProducto === parametros.nombreProducto){
-                                            cantidad = productoCarrito.listaProductos[i].cantidadProducto;
-                                        }
-                                    }
-                                    console.log("cantidad"+cantidad)
-                                    cantidadTotal = cantidad + Number(parametros.cantidadProducto);
-                                    total = (cantidad + Number(parametros.cantidadProducto))* Number(productoEncontrado.precio);
 
-                                    for(var i = 0; i < carritoEncontrado.listaProductos.length; i++){
-                                        if(req.user.sub === carritoEncontrado.idUsuario){
-                                            totalCarrito += carritoEncontrado.listaProductos[i].subtotal
-                                        }
-                                    }
-        
-                                    if(totalCarrito !==0) totalCarrito + total;
-
-                                    if(productoEncontrado.stock < parametros.cantidadProducto){
-                                        return res.status(404).send
-                                        ({mensaje: `Solo se posee del producto ${productoEncontrado.nombre} la cantidad de producto ${productoEncontrado.stock}`})
-                                    }else{
-                                        Carrito.findOneAndUpdate({_id: carritoEncontrado._id,listaProductos:{$elemMatch:{idProducto: productoEncontrado._id}}},
-                                        {"listaProductos.$.cantidadProducto": cantidadTotal, "listaProductos.$.subTotal":total,
-                                        "listaProductos.$.totalCarrito": totalCarrito},
-                                        {new: true},(err, productoGuardado) => {
-                                                if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                                                if(! productoGuardado) return res.status(404).
-                                                send({ mensaje: "Se produjo un error al mommento de ingresar un producto"})
-                                                console.log(productoGuardado)
-                                                return res.status(200).send({ Carrito: productoGuardado})
-                                        })
-                                    }
-                            }) 
-                        }
+                for (let i = 0; i < carritoEncontrado.listaProductos.length; i++) {
+                    if(carritoEncontrado.listaProductos[i].nombreProducto === parametros.nombreProducto)
+                    verificacionStock += carritoEncontrado.listaProductos[i].cantidadProducto;
+                }
+                cantidadVerificacion = verificacionStock + Number(parametros.cantidadProducto);
+                cantidadTotal = (productoEncontrado.stock-cantidadVerificacion)*-1;
+                if(cantidadVerificacion > productoEncontrado.stock ){
+                    if(productoEncontrado.stock === 0){
+                        return res.status(200).send({ mensaje: "Sea agotado este producto"})
+                    }else{
+                        return res.status(200).send({ mensaje: `Su orden se excede por ${cantidadTotal}`})
                     }
+                }
 
-                    if(varibleIngreso === false){
-                        if(parametros.nombreProducto && parametros.cantidadProducto){
-                            console.log("ingreso primer if")
-                            total = productoEncontrado.precio * parametros.cantidadProducto;
-                            console.log("ingreso")
+                for(var i = 0 ; i < carritoEncontrado.listaProductos.length ; i++){
+
+                    if(carritoEncontrado.listaProductos[i].nombreProducto === parametros.nombreProducto){
+
+                        if(productoEncontrado.stock < parametros.cantidadProducto){
+                            return res.status(404).send
+                            ({mensaje: `Solo se posee del producto ${productoEncontrado.nombre} la cantidad de producto ${productoEncontrado.stock}`})
+                        }else{
+
+                            varibleIngreso = true;
+                            for(var j = 0; j < carritoEncontrado.listaProductos.length;j++){
+                                if(carritoEncontrado.listaProductos[j].nombreProducto === parametros.nombreProducto)
+                                cantidadTotal += carritoEncontrado.listaProductos[j].cantidadProducto;
+                            }
+                            cantidadTotal += Number(parametros.cantidadProducto);
+                            subtotalGeneral = Number(productoEncontrado.precio) * cantidadTotal;
+                            subtotal=Number(productoEncontrado.precio) * Number(parametros.cantidadProducto)
 
                             for(var i = 0; i < carritoEncontrado.listaProductos.length; i++){
-                                if(req.user.sub === carritoEncontrado.idUsuario){
-                                    totalCarrito += carritoEncontrado.listaProductos[i].subtotal
-                                }
+                                totalCarrito += carritoEncontrado.listaProductos[i].subTotal
                             }
-                            
-                            console.log(totalCarrito)
 
-                            if(totalCarrito === 0) totalCarrito + total;
+                            totalCarrito += subtotal;
 
-                            if(productoEncontrado.stock < parametros.cantidadProducto){
-                                return res.status(404).send
-                                ({mensaje: `Solo se posee del producto ${productoEncontrado.nombre} la cantidad de producto ${productoEncontrado.stock}`})
-                            }else{
-
-                                
-                                Carrito.findByIdAndUpdate(carritoEncontrado._id,{ $push: { listaProductos:{ nombreProducto: parametros.nombreProducto , 
-                                    cantidadProducto: parametros.cantidadProducto, precioUnitario: productoEncontrado.precio, subtotal: total,
-                                    totalCarrito: totalCarrito, idProducto:productoEncontrado._id}}},
-                                    {new :true},(err, productoGuardado)=>{
-                                        console.log(productoGuardado)
-                                        if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                                        if(! productoGuardado) return res.status(404).
-                                        send({ mensaje: "Se produjo un error al mommento de ingresar un producto"})
-                                        return res.status(200).send({ Carrito: productoGuardado})
-                                })
-                            }
-                        }else{
-                            return res.status(404).send({message: "No has llenado todos los campos"})
+                            Carrito.findOneAndUpdate({_id: carritoEncontrado._id,listaProductos:{$elemMatch:{idProducto: productoEncontrado._id}}},
+                            {"listaProductos.$.cantidadProducto": cantidadTotal, "listaProductos.$.subTotal":subtotalGeneral,
+                            $set: {total: totalCarrito}},{new: true},(err, productoGuardado) => {
+                                    if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                                    if(! productoGuardado) return res.status(404).
+                                    send({ mensaje: "Se produjo un error al mommento de ingresar un producto"})
+                                    return res.status(200).send({ Carrito: productoGuardado})
+                            })
                         }
+
+
                     }
-        
-                })
-        
+                }
+
+                if(varibleIngreso === false){
+                    if(parametros.nombreProducto && parametros.cantidadProducto){
+
+                        if(productoEncontrado.stock < parametros.cantidadProducto){
+                            return res.status(404).send
+                            ({mensaje: `Solo se posee del producto ${productoEncontrado.nombre} la cantidad de producto ${productoEncontrado.stock}`})
+                        }else{
+
+                            // calcula el subtotal de listaProductos
+                            subtotal = productoEncontrado.precio * parametros.cantidadProducto;
+                            for(var i = 0; i < carritoEncontrado.listaProductos.length; i++){
+                                totalCarrito += carritoEncontrado.listaProductos[i].subTotal
+                            }
+
+                            totalCarrito= totalCarrito + subtotal;
+
+                            Carrito.findByIdAndUpdate(carritoEncontrado._id,{ $push: { listaProductos:{ nombreProducto: parametros.nombreProducto , 
+                                cantidadProducto: parametros.cantidadProducto, precioUnitario: productoEncontrado.precio, subTotal: subtotal,
+                                idProducto:productoEncontrado._id}},$set:{total: totalCarrito}},
+                                {new :true},(err, productoGuardado)=>{
+                                    if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
+                                    if(! productoGuardado) return res.status(404).
+                                    send({ mensaje: "Se produjo un error al mommento de ingresar un producto"})
+                                    return res.status(200).send({ Carrito: productoGuardado})
+                            })
+                        }
+                    }else{
+                        return res.status(404).send({message: "No has llenado todos los campos"})
+                    }
+                }
             })
         })
     }else{
@@ -127,38 +113,40 @@ function eliminarCarritoProducto(req,res){
     var idProductoCarrito = req.params.idProductoCarrito;
     if(req.user.rol === "cliente"){
         Carrito.findOne({idUsuario: req.user.sub},(err, carritoEncontrado)=>{
-            if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if (err) return res.status(500).send({ mensaje: "Error en la peticion al momento de buscar el carrtio"})
             if(carritoEncontrado !== null){
-                Carrito.findOne({_id:carritoEncontrado._id,listaProductos:{$elemMatch:{_id:idProductoCarrito}}}
-                    ,(err, productoEliminar)=>{
-                    if (err) return res.status(500).send({ mensaje: `Error en la peticion${err}`})
-                    if(!productoEliminar) return res.status(500).send({mensaje: `Error al eliminar el producto${err}`})
 
-                    console.log(productoEliminar)
+                let totalProductoBorrar=0;
+                let totalCorregido=0;
 
-                    for(var i=0; i<productoEliminar.listaProductos.length; i++){
+                for(var i = 0; i < carritoEncontrado.listaProductos.length; i++){
+                    if(carritoEncontrado.listaProductos[i].idProducto === idProductoCarrito){
+                        totalProductoBorrar += carritoEncontrado.listaProductos[i].subTotal;
+                    }
+                    totalCorregido += carritoEncontrado.listaProductos[i].subTotal;
+                }
+                
+                totalCorregido -= totalProductoBorrar;
 
-                        console.log("coincidencia entre")
-                        console.log(productoEliminar.listaProductos[i]._id)
-                        console.log(idProductoCarrito)
-                        console.log(productoEliminar.listaProductos[i]._id == idProductoCarrito)
+                Carrito.findOneAndUpdate({idUsuario: req.user.sub},{$set:{total: totalCorregido}},(err,productoCorregido)=>{
+                    if(err) return res.status(500).send({ mensaje: `Error en la peticion de producto corregido ${err}`})
+                    if(productoCorregido === null) return res.status(404).send({ mensaje: "Error al momento de corregir el total"})
 
-                        if(productoEliminar.listaProductos[i]._id == idProductoCarrito){
+                    for(var i=0; i<carritoEncontrado.listaProductos.length; i++){
+                        if(carritoEncontrado.listaProductos[i].idProducto == idProductoCarrito){
+
                             Carrito.findOneAndUpdate({idUsuario: req.user.sub},{$pull:{ listaProductos: 
-                                {_id: productoEliminar.listaProductos[i]._id}}}
+                                {idProducto: carritoEncontrado.listaProductos[i].idProducto}}}
                                 ,(err,productoEliminado)=>{
-
-                                    console.log("productoEliminado")
-                                    console.log(productoEliminado)
-
                                     if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
                                     if(productoEliminado === null) return res.status(404).send({ mensaje: "Error al momento de eliminar el producto"})
-        
-                                    return res.status(200).send({Carrito: productoEliminar})
+
+                                    return res.status(200).send({Carrito: carritoEncontrado})
                             })
+
                         }
                     }
-                    
+ 
                 })
             }else{
                 return res.status(404).send({mensaje: "Error al encontrar el carrito"})
@@ -177,32 +165,27 @@ function pasarDatosFactura(req,res){
             if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
             if(!carritoEncontrado) return res.status(404).send({mensaje: "Carrito no encontrado"})
 
+            for(var i = 0; i < carritoEncontrado.listaProductos.length;i++){
+                
+            }
+
             var modeloFactura = Factura();
 
             modeloFactura.listaProductos = carritoEncontrado.listaProductos;
             modeloFactura.idUsuario = req.user.sub;
+            modeloFactura.totalFactura = carritoEncontrado.total;
             modeloFactura.save((err, facturaGuardar) =>{
                 if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
                 if(!facturaGuardar) return res.status(404).send({mensaje: "Error al momento de guardar la factura"})
-                
-                for(var i = 0; i< carritoEncontrado.listaProductos.length ; i++){
-                    Productos.findOne({nombre: carritoEncontrado.listaProductos[i].nombreProducto},
-                        {$inc: {  cantidad: carritoEncontrado.listaProductos[i].cantidadProducto * -1}},
-                        (err,productoDisminucion)=>{
-                            if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                            if(!productoDisminucion) return res.status(404)
-                            .send({mensaje: "Error al momento de encontrar el producto a disminuir"})
-                        })
-                }
 
-                Carrito.findById(req.user.sub,{$set:{ listaProductos:[], totalCarrito : 0}},(err, valoresCero)=>{
-                    if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
-                    if (!valoresCero) return res.status(404).send({mensaje: "Error al momento de poner a cero los valores"})
+                restarInc(carritoEncontrado,res);
+                Carrito.findOneAndUpdate({idUsuario: req.user.sub},{$set:{listaProductos:[],total:0}},
+                    (err, valoresCero)=>{
+                    if (err) return res.status(500).send({ mensaje: `Error en la peticion al momento de setear los valores a 0 ${err}`})
+                    if (!valoresCero) return res.status(404).send({mensaje: `Error al momento de poner a cero los valores ${valoresCero}`})
 
-                    //return res.status(200).send({mensaje: valoresCero})
+                    return res.status(200).send({factura: "fatura genera con exito"})
                 })
-
-                return res.status(200).send({factura: "fatura genera con exito \n" +facturaGuardar})
             })
 
         })
@@ -210,6 +193,20 @@ function pasarDatosFactura(req,res){
         return res.status(404).send({mensaje : " no posees los permisos necesarios"})
     }
 
+}
+
+function restarInc(carritoEncontrado,res){
+    for(var i = 0; i< carritoEncontrado.listaProductos.length ; i++){
+
+        Productos.findOneAndUpdate({nombre: carritoEncontrado.listaProductos[i].nombreProducto},
+            {$inc: {  stock: carritoEncontrado.listaProductos[i].cantidadProducto * -1, 
+            vendido: carritoEncontrado.listaProductos[i].cantidadProducto}},
+            (err,productoDisminucion)=>{
+                if (err) return res.status(500).send({ mensaje: `Error en la peticion al disminuir ${err}`})
+                if(!productoDisminucion) return res.status(404)
+                .send({mensaje: "Error al momento de encontrar el producto a disminuir"})      
+        })
+    }
 }
 
 
