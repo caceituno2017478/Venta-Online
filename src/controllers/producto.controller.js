@@ -128,16 +128,42 @@ function buscarCategoriaPorNombre(req,res){
 
 function productosAgotados(req,res){
     Productos.find({},(err,productosEncontrados)=>{
-        var productos;
+        var productos ="";
         if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
         if(!productosEncontrados) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
 
         productosEncontrados.forEach(element=>{
             if(element.stock === 0){
+                console.log(productos)
+                console.log(element.nombre)
                 productos= productos + " " + element.nombre;
             }
         })
+        console.log(productos)
         return res.status(404).send({Producto: "Productos Agotados: \n"+productos})
+    })
+}
+
+function productoMasVendido(req,res){
+    Productos.find({},(err, producto)=>{
+        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+        if(!producto) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+
+        return res.status(200).send({ producto : producto.sort((a,b)=>{
+            if(a.vendido < b.vendido){
+                return 1;
+            }
+            if(a.vendido > b.vendido){
+                return -1;
+            }
+            if(a.nombre.toLowerCase() > b.nombre.toLowerCase()){
+                return 1;
+            }
+            if(a.nombre.toLowerCase() < b.nombre.toLowerCase()){
+                return -1;
+            }
+            return 0;
+        })})
     })
 }
 
@@ -147,5 +173,6 @@ module.exports = {
     eliminarProducto,
     buscarProductoPorNombre,
     buscarCategoriaPorNombre,
-    productosAgotados
+    productosAgotados,
+    productoMasVendido
 }

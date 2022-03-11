@@ -11,4 +11,5 @@ api.delete("/eliminarProducto/:idProducto",md_autenticacion.autenticacion,produc
 api.post("/buscarProductosNombre",md_autenticacion.autenticacion,productosController.buscarProductoPorNombre)
 api.post("/buscarCategoriaNombre",md_autenticacion.autenticacion,productosController.buscarCategoriaPorNombre)
 api.get("/productosAgotados",md_autenticacion.autenticacion,productosController.productosAgotados)
+api.get("/productoMasVendido",md_autenticacion.autenticacion,productosController.productoMasVendido)
 module.exports =api;

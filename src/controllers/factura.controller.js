@@ -10,6 +10,8 @@ function visualizarFacturas(req,res){
     })
 }
 
+/************************** para visualizar productos de una factura **********************************/ 
+
 function facturasPorId(req,res){
     var idFac = req.params.idFactura;
     Facturas.findOne({_id: idFac},(err, facturaEncontrada)=>{

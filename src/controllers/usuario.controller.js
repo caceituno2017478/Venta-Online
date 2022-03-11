@@ -19,8 +19,7 @@ function login(req, res) {
                         
                         if (parametros.obtenerToken === 'true') {
 
-                            console.log(facturasUsuario)
-                            return res.status(200).send({token: jwt.crearToken(usuarioEncontrado)+`${facturasUsuario}`})
+                            return res.status(200).send({token: jwt.crearToken(usuarioEncontrado), facturas: facturasUsuario})
     
                         } else {
                             usuarioEncontrado.password = undefined;
