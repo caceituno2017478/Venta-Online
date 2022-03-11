@@ -1,4 +1,3 @@
-const res = require('express/lib/response');
 const Categorias = require('../models/categoria.model')
 const Productos = require('../models/productos.model')
 
@@ -36,6 +35,8 @@ function editarCategoria(req,res){
         var parametros = req.body;
         var idCat = req.params.idCategoria;
 
+        if(parametros.nombre) return res.status(200).send({ mensaje: "Este tipo de datos no se pueden modificar"})
+
         Categorias.findOne({nombre: parametros.nombre},(err,verfificacionCategoria)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
             if(verfificacionCategoria=== null){
@@ -48,6 +49,7 @@ function editarCategoria(req,res){
                 return res.status(200).send({ mensaje: "Esta categoria ya existe"})
             }
         })
+
     }else{
         return res.status(404).send({ mensaje: "No posees los permisos necesarios"})
     }
@@ -66,7 +68,7 @@ function eliminarCategoria(req, res) {
                     if(!categoriaEncontradoId) return res.status(404).send({mensaje: "categoria no exite"})
                 
                     Productos.updateMany({nombreCategoria: categoriaEncontradoId.nombre},
-                        {nombreCategoria: busquedaDefault.nombre},
+                        {$set:{nombreCategoria: busquedaDefault.nombre}},
                         (err, productoModificadoDefault)=>{
                                 if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
                 
@@ -78,7 +80,7 @@ function eliminarCategoria(req, res) {
                                     return res.status(200).send({categoria : categoriaEliminada})
                                 })
                 
-                            })
+                    })
                 })
         })
     }else{

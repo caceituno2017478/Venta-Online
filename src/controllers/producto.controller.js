@@ -107,64 +107,83 @@ function eliminarProducto(req,res){
 }
 
 function buscarProductoPorNombre(req,res){
-    var parametros = req.body;
-    Productos.findOne({nombre: parametros.nombre},(err,productoEncontrados)=>{
-        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-        if(!productoEncontrados) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
+    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+        var parametros = req.body;
+        Productos.findOne({nombre: parametros.nombre},(err,productoEncontrados)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!productoEncontrados) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
 
-        return res.status(200).send({Producto: productoEncontrados})
-    })
+            return res.status(200).send({Producto: productoEncontrados})
+        })
+    }else{
+        return res.status(404).send({mensaje: "No posees lo permisos necesarios"})
+    }
 }
 
 function buscarCategoriaPorNombre(req,res){
-    var parametros = req.body;
-    Productos.findOne({nombreCategoria: parametros.nombreCategoria},(err,categoriaEncontradas)=>{
-        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-        if(!categoriaEncontradas) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
+    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+        var parametros = req.body;
+        Productos.find({nombreCategoria: parametros.nombreCategoria},(err,categoriaEncontradas)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!categoriaEncontradas) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
 
-        return res.status(200).send({Producto: categoriaEncontradas})
-    })
+            return res.status(200).send({Producto: categoriaEncontradas})
+        })
+    }else{
+        return res.status(404).send({mensaje: "No posees lo permisos necesarios"})
+    }
 }
 
 function productosAgotados(req,res){
-    Productos.find({},(err,productosEncontrados)=>{
-        var productos ="";
-        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-        if(!productosEncontrados) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
-
-        productosEncontrados.forEach(element=>{
-            if(element.stock === 0){
-                console.log(productos)
-                console.log(element.nombre)
-                productos= productos + " " + element.nombre;
-            }
+    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+        Productos.find({stock: 0},(err,productosEncontrados)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(productosEncontrados.length === 0) return res.status(404).send({ mensaje: "En este momento no hay productos agotados"})
+            
+            return res.status(404).send({productos: productosEncontrados})
         })
-        console.log(productos)
-        return res.status(404).send({Producto: "Productos Agotados: \n"+productos})
-    })
+    }else{
+        return res.status(404).send({mensaje: "No posees lo permisos necesarios"})
+    }
 }
 
 function productoMasVendido(req,res){
-    Productos.find({},(err, producto)=>{
-        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-        if(!producto) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+        Productos.find({},(err, producto)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!producto) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+    
+            return res.status(200).send({ producto : producto.sort((a,b)=>{
+                if(a.vendido < b.vendido){
+                    return 1;
+                }
+                if(a.vendido > b.vendido){
+                    return -1;
+                }
+                if(a.nombre.toLowerCase() > b.nombre.toLowerCase()){
+                    return 1;
+                }
+                if(a.nombre.toLowerCase() < b.nombre.toLowerCase()){
+                    return -1;
+                }
+                return 0;
+            })})
+        })
+    }else{
+        return res.status(404).send({mensaje: "No posees lo permisos necesarios"})
+    }
+}
 
-        return res.status(200).send({ producto : producto.sort((a,b)=>{
-            if(a.vendido < b.vendido){
-                return 1;
-            }
-            if(a.vendido > b.vendido){
-                return -1;
-            }
-            if(a.nombre.toLowerCase() > b.nombre.toLowerCase()){
-                return 1;
-            }
-            if(a.nombre.toLowerCase() < b.nombre.toLowerCase()){
-                return -1;
-            }
-            return 0;
-        })})
-    })
+function visualizarProductos(req,res){
+    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+        Productos.find({},(err,productos)=>{
+            if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+            if(!productos) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+            return res.status(200).send({productos: productos})
+        })
+    }else{
+        return res.status(404).send({mensaje: "No posees lo permisos necesarios"})
+    }
 }
 
 module.exports = {
@@ -174,5 +193,6 @@ module.exports = {
     buscarProductoPorNombre,
     buscarCategoriaPorNombre,
     productosAgotados,
-    productoMasVendido
+    productoMasVendido,
+    visualizarProductos
 }
