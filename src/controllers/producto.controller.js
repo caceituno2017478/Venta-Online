@@ -106,8 +106,46 @@ function eliminarProducto(req,res){
     } 
 }
 
+function buscarProductoPorNombre(req,res){
+    var parametros = req.body;
+    Productos.findOne({nombre: parametros.nombre},(err,productoEncontrados)=>{
+        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+        if(!productoEncontrados) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
+
+        return res.status(200).send({Producto: productoEncontrados})
+    })
+}
+
+function buscarCategoriaPorNombre(req,res){
+    var parametros = req.body;
+    Productos.findOne({nombreCategoria: parametros.nombreCategoria},(err,categoriaEncontradas)=>{
+        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+        if(!categoriaEncontradas) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
+
+        return res.status(200).send({Producto: categoriaEncontradas})
+    })
+}
+
+function productosAgotados(req,res){
+    Productos.find({},(err,productosEncontrados)=>{
+        var productos;
+        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+        if(!productosEncontrados) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+
+        productosEncontrados.forEach(element=>{
+            if(element.stock === 0){
+                productos= productos + " " + element.nombre;
+            }
+        })
+        return res.status(404).send({Producto: "Productos Agotados: \n"+productos})
+    })
+}
+
 module.exports = {
     agregarProducto,
     editarProducto,
-    eliminarProducto
+    eliminarProducto,
+    buscarProductoPorNombre,
+    buscarCategoriaPorNombre,
+    productosAgotados
 }

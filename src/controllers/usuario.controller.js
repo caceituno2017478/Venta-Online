@@ -2,24 +2,32 @@ const Usuarios = require("../models/usuario.model")
 const Carrito = require("../models/carrito.model")
 const bcrypt = require("bcrypt-nodejs");
 const jwt = require("../services/jwt")
+const Facturas = require("../models/factura.model")
 
 // Login
 function login(req, res) {
     var parametros = req.body;
-
     Usuarios.findOne({ gmail: parametros.gmail }, (err, usuarioEncontrado) => {
         if (err) return res.status(500).send({ mensaje: "Error,nose a podido resolver la consulta" });
         if (usuarioEncontrado !== null) {
             bcrypt.compare(parametros.password, usuarioEncontrado.password, (err, vertifiacionPassword) => {
                 if (vertifiacionPassword!== null) {
 
-                    if (parametros.obtenerToken === 'true') {
-                        return res.status(200).send({token: jwt.crearToken(usuarioEncontrado)})
+                    Facturas.find({idUsuario: usuarioEncontrado._id},(err, facturasUsuario)=>{
+                        if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                        if(! facturasUsuario) return res.status(404).send({ mensaje: "Error al momento de buscar las facturas"})
+                        
+                        if (parametros.obtenerToken === 'true') {
 
-                    } else {
-                        usuarioEncontrado.password = undefined;
-                        return res.status(200).send({ usuario: usuarioEncontrado });
-                    }
+                            console.log(facturasUsuario)
+                            return res.status(200).send({token: jwt.crearToken(usuarioEncontrado)+`${facturasUsuario}`})
+    
+                        } else {
+                            usuarioEncontrado.password = undefined;
+                            return res.status(200).send({ usuario: usuarioEncontrado });
+                        }
+                    })
+
                 } else {
                     return res.status(500).send({ mensaje: "La contraseña es incorrecta" });
                 }
