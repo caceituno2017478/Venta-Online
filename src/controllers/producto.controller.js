@@ -107,7 +107,7 @@ function eliminarProducto(req,res){
 }
 
 function buscarProductoPorNombre(req,res){
-    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+    if(req.user.rol === "cliente"){
         var parametros = req.body;
         Productos.findOne({nombre: parametros.nombre},(err,productoEncontrados)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
@@ -121,7 +121,7 @@ function buscarProductoPorNombre(req,res){
 }
 
 function buscarCategoriaPorNombre(req,res){
-    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+    if(req.user.rol === "cliente"){
         var parametros = req.body;
         Productos.find({nombreCategoria: parametros.nombreCategoria},(err,categoriaEncontradas)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
@@ -175,7 +175,7 @@ function productoMasVendido(req,res){
 }
 
 function visualizarProductos(req,res){
-    if(req.user.rol === "administrador" || req.user.rol === "cliente"){
+    if(req.user.rol === "administrador"){
         Productos.find({},(err,productos)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
             if(!productos) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
