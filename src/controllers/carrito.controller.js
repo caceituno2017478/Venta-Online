@@ -144,21 +144,25 @@ function eliminarCarritoProducto(req,res){
                     if(err) return res.status(500).send({ mensaje: `Error en la peticion de producto corregido ${err}`})
                     if(productoCorregido === null) return res.status(404).send({ mensaje: "Error al momento de corregir el total"})
 
-                    for(var i=0; i<carritoEncontrado.listaProductos.length; i++){
-                        if(carritoEncontrado.listaProductos[i].idProducto == idProductoCarrito){
+                    Productos.findOne({_id: idProductoCarrito},(err, productoEncontrado)=>{
+                        if (err) return res.status(500).send({ mensaje: "Error en la peticion"})
+                        if(!productoEncontrado) return res.status(404).send({ mensaje: "El producto ingresado no es correcto"})
 
-                            Carrito.findOneAndUpdate({idUsuario: req.user.sub},{$pull:{ listaProductos: 
-                                {idProducto: carritoEncontrado.listaProductos[i].idProducto}}}
-                                ,(err,productoEliminado)=>{
-                                    if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
-                                    if(productoEliminado === null) return res.status(404).send({ mensaje: "Error al momento de eliminar el producto"})
-
-                                    return res.status(200).send({Carrito: carritoEncontrado})
-                            })
-
+                        for(var i=0; i<carritoEncontrado.listaProductos.length; i++){
+                            if(carritoEncontrado.listaProductos[i].idProducto == idProductoCarrito){
+    
+                                Carrito.findOneAndUpdate({idUsuario: req.user.sub},{$pull:{ listaProductos: 
+                                    {idProducto: carritoEncontrado.listaProductos[i].idProducto}}}
+                                    ,(err,productoEliminado)=>{
+                                        if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
+                                        if(productoEliminado === null) return res.status(404).send({ mensaje: "Error al momento de eliminar el producto"})
+                                        productoEncontrado.vendido = undefined;
+                                        return res.status(200).send({Carrito: productoEncontrado})
+                                })
+                            }
                         }
-                    }
- 
+
+                    })
                 })
             }else{
                 return res.status(404).send({mensaje: "Error al encontrar el carrito"})
@@ -227,7 +231,7 @@ function generarFactura(facturaGuardar, res){
     var path = "./src/pdf/"+"factura-"+facturaGuardar.idUsuario+".pdf";
     
     createInvoice(facturaGuardar,path);
-    return res.status(200).send({factura: "Factura generada"})
+    return res.status(200).send({factura: "Factura generada", factura: facturaGuardar})
 }
 
 function createInvoice(factura, path) {

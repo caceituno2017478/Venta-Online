@@ -37,14 +37,21 @@ function agregarProducto(req,res) {
         }else{
             
             /* agregar mas productos en stock*/ 
-            totalStock =Number(parametros.stock) + productoEncontrado.stock;
-            Productos.findByIdAndUpdate(productoEncontrado._id,{stock: totalStock},{new : true},
-                (err, agregarProductos)=>{
-                    if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
-                    if (!agregarProductos) return res.status(500)
-                    .send({ mensaje: "Error al momento de agregar productos"})
-                    return res.status(200).send({ producto: agregarProductos})
-            })
+            if(productoEncontrado.nombre === parametros.nombre && 
+                productoEncontrado.nombreCategoria === parametros.nombreCategoria){ 
+                   
+                totalStock =Number(parametros.stock) + productoEncontrado.stock;
+                Productos.findByIdAndUpdate(productoEncontrado._id,{stock: totalStock},{new : true},
+                    (err, agregarProductos)=>{
+                        if (err) return res.status(500).send({ mensaje: `Error en la peticion ${err}`})
+                        if (!agregarProductos) return res.status(500)
+                        .send({ mensaje: "Error al momento de agregar productos"})
+                        return res.status(200).send({ producto: agregarProductos})
+                })    
+
+            }else{
+                return res.status(404).send({mensaje: "El producto que desea agregar ya existe"})
+            }
         }
     })
         }else{
@@ -125,7 +132,7 @@ function buscarCategoriaPorNombre(req,res){
         var parametros = req.body;
         Productos.find({nombreCategoria: parametros.nombreCategoria},(err,categoriaEncontradas)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-            if(!categoriaEncontradas) return res.status(404).send({ mensaje: "Error al momento de buscar los productos"})
+            if(categoriaEncontradas.length === 0) return res.status(404).send({ mensaje: "Esa categoria no a sido asignada"})
 
             return res.status(200).send({Producto: categoriaEncontradas})
         })
@@ -178,7 +185,7 @@ function visualizarProductos(req,res){
     if(req.user.rol === "administrador"){
         Productos.find({},(err,productos)=>{
             if(err) return res.status(500).send({ mensaje: "Error en la peticion"})
-            if(!productos) return res.status(404).send({ mensaje: "Error al momento de encontrar el producto"})
+            if(productos.length === 0) return res.status(404).send({ mensaje: "No hay productos disponibles"})
             return res.status(200).send({productos: productos})
         })
     }else{
